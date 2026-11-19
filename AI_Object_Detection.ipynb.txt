@@ -1,0 +1,160 @@
+{
+  "nbformat": 4,
+  "nbformat_minor": 0,
+  "metadata": {
+    "colab": {
+      "provenance": []
+    },
+    "kernelspec": {
+      "name": "python3",
+      "display_name": "Python 3"
+    },
+    "language_info": {
+      "name": "python"
+    }
+  },
+  "cells": [
+    {
+      "cell_type": "code",
+      "execution_count": null,
+      "metadata": {
+        "id": "TJ5ghZEY2etw"
+      },
+      "outputs": [],
+      "source": [
+        "\n",
+        "\n",
+        "!pip install -q ultralytics gradio opencv-python"
+      ]
+    },
+    {
+      "cell_type": "code",
+      "source": [
+        "\n",
+        "import gradio as gr\n",
+        "import cv2\n",
+        "from ultralytics import YOLO\n",
+        "from collections import Counter\n",
+        "\n",
+        "# Load YOLO model\n",
+        "model = YOLO(\"yolov8n.pt\")\n",
+        "\n",
+        "# Object detection function\n",
+        "def detect_objects(image):\n",
+        "    if image is None:\n",
+        "        return None, \"Please upload an image.\"\n",
+        "\n",
+        "    # Convert RGB image to BGR\n",
+        "    image_bgr = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)\n",
+        "\n",
+        "    # Detect objects\n",
+        "    results = model(image_bgr)\n",
+        "\n",
+        "    # Draw bounding boxes\n",
+        "    output = results[0].plot()\n",
+        "\n",
+        "    # Convert output to RGB\n",
+        "    output = cv2.cvtColor(output, cv2.COLOR_BGR2RGB)\n",
+        "\n",
+        "    # Get detected object names\n",
+        "    names = results[0].names\n",
+        "    detected = []\n",
+        "\n",
+        "    for box in results[0].boxes:\n",
+        "        class_id = int(box.cls[0])\n",
+        "        confidence = float(box.conf[0])\n",
+        "        object_name = names[class_id]\n",
+        "\n",
+        "        detected.append(\n",
+        "            f\"{object_name} - {confidence * 100:.2f}%\"\n",
+        "        )\n",
+        "\n",
+        "    if detected:\n",
+        "        summary = \"Detected Objects:\\n\\n\"\n",
+        "        for item in detected:\n",
+        "            summary += \"• \" + item + \"\\n\"\n",
+        "    else:\n",
+        "        summary = \"No objects detected.\"\n",
+        "\n",
+        "    return output, summary\n",
+        "\n",
+        "\n",
+        "# Create Gradio interface\n",
+        "with gr.Blocks(title=\"AI Object Detection\") as demo:\n",
+        "\n",
+        "    gr.Markdown(\"# AI-Based Object Detection\")\n",
+        "    gr.Markdown(\n",
+        "        \"Upload an image to detect objects using YOLO.\"\n",
+        "    )\n",
+        "\n",
+        "    input_image = gr.Image(\n",
+        "        label=\"Upload Image\",\n",
+        "        type=\"numpy\"\n",
+        "    )\n",
+        "\n",
+        "    detect_button = gr.Button(\n",
+        "        \"Detect Objects\",\n",
+        "        variant=\"primary\"\n",
+        "    )\n",
+        "\n",
+        "    output_image = gr.Image(\n",
+        "        label=\"Detection Result\"\n",
+        "    )\n",
+        "\n",
+        "    output_text = gr.Textbox(\n",
+        "        label=\"Detected Object Details\",\n",
+        "        lines=8\n",
+        "    )\n",
+        "\n",
+        "    detect_button.click(\n",
+        "        fn=detect_objects,\n",
+        "        inputs=input_image,\n",
+        "        outputs=[output_image, output_text]\n",
+        "    )\n",
+        "\n",
+        "demo.launch(share=True)"
+      ],
+      "metadata": {
+        "colab": {
+          "base_uri": "https://localhost:8080/",
+          "height": 611
+        },
+        "id": "pslwOYZV548k",
+        "outputId": "7dd00562-1af5-4879-d023-7f7e70e89c0e"
+      },
+      "execution_count": null,
+      "outputs": [
+        {
+          "output_type": "stream",
+          "name": "stdout",
+          "text": [
+            "Colab notebook detected. To show errors in colab notebook, set debug=True in launch()\n",
+            "* Running on public URL: https://0b18022d510cabe6a9.gradio.live\n",
+            "\n",
+            "This share link is temporary and will last for up to 1 week (best effort). For free permanent hosting and GPU upgrades, run `gradio deploy` from the terminal in the working directory to deploy to Hugging Face Spaces (https://huggingface.co/spaces)\n"
+          ]
+        },
+        {
+          "output_type": "display_data",
+          "data": {
+            "text/plain": [
+              "<IPython.core.display.HTML object>"
+            ],
+            "text/html": [
+              "<div><iframe src=\"https://0b18022d510cabe6a9.gradio.live\" width=\"100%\" height=\"500\" allow=\"autoplay; camera; microphone; clipboard-read; clipboard-write;\" frameborder=\"0\" allowfullscreen></iframe></div>"
+            ]
+          },
+          "metadata": {}
+        },
+        {
+          "output_type": "execute_result",
+          "data": {
+            "text/plain": []
+          },
+          "metadata": {},
+          "execution_count": 3
+        }
+      ]
+    }
+  ]
+}
